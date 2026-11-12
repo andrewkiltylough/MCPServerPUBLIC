@@ -32,13 +32,13 @@ Request a key with your name and email address. The key is emailed to you; it is
 macOS or Linux:
 
 ```bash
-curl -X POST https://premind-apim.azure-api.net/daybyday-register -H "Content-Type: application/json" -d '{"name":"Your Name","email":"you@example.com"}'
+curl -X POST https://api.wallstreetsahead.ai/daybyday-register -H "Content-Type: application/json" -d '{"name":"Your Name","email":"you@example.com"}'
 ```
 
 Windows PowerShell:
 
 ```powershell
-Invoke-RestMethod -Method Post -Uri https://premind-apim.azure-api.net/daybyday-register -ContentType 'application/json' -Body '{"name":"Your Name","email":"you@example.com"}'
+Invoke-RestMethod -Method Post -Uri https://api.wallstreetsahead.ai/daybyday-register -ContentType 'application/json' -Body '{"name":"Your Name","email":"you@example.com"}'
 ```
 
 Each email address can request one key. Keep it private: enter it only through `/plugin`, never in a chat message.
@@ -51,7 +51,7 @@ All settings are optional except the API key. Set them with `/plugin`.
 |---|---|---|
 | API key | none | Your personal key. Stored in your system's secure credential store. |
 | Data folder | `C:\WallStreetsAhead` on Windows, `~/WallStreetsAhead` elsewhere | Where reports are saved. |
-| API URL | `https://premind-apim.azure-api.net/daybyday` | The WallStreetsAhead.ai API gateway. |
+| API URL | `https://api.wallstreetsahead.ai/ClaudeCodePlugin` | The WallStreetsAhead.ai API gateway. |
 
 If you used the WallStreetsAhead.ai Windows installer, the plugin also reads the API key and URL it saved in `~/.wallstreetsahead/wallstreetsahead.properties`, so you do not need to enter them again.
 
@@ -70,13 +70,13 @@ If you used the WallStreetsAhead.ai Windows installer, the plugin also reads the
 
 The plugin runs a small server, [`server/index.mjs`](server/index.mjs), on your computer. It is one readable JavaScript file with no dependencies.
 
-- **It contacts one address:** the API gateway, `https://premind-apim.azure-api.net/daybyday` unless you change the API URL. Nothing else.
+- **It contacts one address:** the API gateway, `https://api.wallstreetsahead.ai/ClaudeCodePlugin` unless you change the API URL. Nothing else.
 - **It sends:** your API key, in the `Ocp-Apim-Subscription-Key` header, and the names of the report folders and files it is listing or downloading. It sends no other information about you, your computer or your files.
 - **It fetches:** folder listings and report files from the WallStreetsAhead.ai report share, read-only. The gateway reads the share with its own Azure identity, so no storage credential is on your computer.
 - **It writes:** downloaded report files inside your data folder, and only there. Remote names that could point outside that folder are refused. It never deletes or changes any other file.
 - **It reads:** your data folder, to see what you already have, and the optional settings file above.
 
-Requesting an API key sends the name and email address you type to `https://premind-apim.azure-api.net/daybyday-register`, which emails the key to that address. The plugin itself never sends your name or email.
+Requesting an API key sends the name and email address you type to `https://api.wallstreetsahead.ai/daybyday-register`, which emails the key to that address. The plugin itself never sends your name or email.
 
 ## Troubleshooting
 

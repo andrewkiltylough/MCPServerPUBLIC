@@ -1,13 +1,13 @@
 {
   "name": "wallstreetsahead-data",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Fetches the WallStreetsAhead.ai ETF mover reports from Azure Files into the local data folder on request.",
   "author": { "name": "WallStreetsAhead.ai" },
   "userConfig": {
     "api_url": {
       "type": "string",
       "title": "API URL",
-      "description": "The WallStreetsAhead.ai API gateway address, for example https://premind-apim.azure-api.net/daybyday. Leave blank if you entered it in the installer.",
+      "description": "The WallStreetsAhead.ai API gateway address, for example https://api.wallstreetsahead.ai/ClaudeCodePlugin. Leave blank if you entered it in the installer.",
       "required": false
     },
     "api_key": {

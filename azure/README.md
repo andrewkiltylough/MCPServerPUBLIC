@@ -2,14 +2,23 @@
 
 How the gateway behind WallStreetsAhead.ai is set up, and how to issue keys for it.
 
-> **The Azure names here deliberately still say `daybyday` and `premind`.** The
-> API path `/daybyday`, the api-ids, the `daybyday-*` named values, the resource
-> group, the APIM instance and the storage account are all **already deployed**,
-> and every key issued so far is scoped to them. Renaming them would mean
-> redeploying the API, rescoping every subscription, and changing the API URL
-> every user has configured. The app was renamed; the gateway was not. The
-> report folder `SignalMoves/DayByDayRunner` is a path in someone else's system
-> and never changes.
+> **The public URL is now `https://api.wallstreetsahead.ai/ClaudeCodePlugin`.**
+> The gateway has a custom domain with a free Azure-managed certificate, and the
+> data API's path was renamed from `daybyday`. The old
+> `premind-apim.azure-api.net` hostname still answers, but `/daybyday` does not:
+> anyone who installed before the rename has to update the API URL in their
+> settings or reinstall. Their keys are unaffected — a subscription is scoped to
+> the API's resource id, which did not change.
+>
+> **Everything else still says `daybyday` and `premind`, on purpose.** The
+> api-ids, the `daybyday-*` named values, the register path, the resource group,
+> the APIM instance and the storage account are all **already deployed** and
+> never appear in front of a user. Renaming them would mean rescoping every
+> subscription for no visible gain. In particular the register path stays
+> `daybyday-register`: it is baked into every installer already downloaded, so
+> renaming it would silently stop new users getting a key. The report folder
+> `SignalMoves/DayByDayRunner` is a path in someone else's system and never
+> changes.
 
 The tool no longer holds a storage key. Every request goes through **Azure API Management (APIM)**:
 
@@ -74,7 +83,7 @@ az rest --method put --url "https://management.azure.com$(az apim show -g $RG -n
 The API URL people put in the plugin is:
 
 ```
-https://<APIM>.azure-api.net/daybyday
+https://api.wallstreetsahead.ai/ClaudeCodePlugin
 ```
 
 ## 5. Issue a key per person
@@ -187,7 +196,7 @@ az apim nv create -g $RG --service-name $APIM --named-value-id daybyday-apim-res
 ```
 
 ```bash
-az apim nv create -g $RG --service-name $APIM --named-value-id daybyday-api-url --display-name daybyday-api-url --value "https://$APIM.azure-api.net/daybyday"
+az apim nv create -g $RG --service-name $APIM --named-value-id daybyday-api-url --display-name daybyday-api-url --value "https://api.wallstreetsahead.ai/ClaudeCodePlugin"
 ```
 
 ### Let the gateway create subscriptions
@@ -213,7 +222,7 @@ register → All operations → Inbound processing → </> (code view)**, paste,
 ### Check it
 
 ```bash
-curl -s -i -X POST -H "Content-Type: application/json" -d '{"name":"Test User","email":"test@example.com","code":"<the invite code>"}' "https://$APIM.azure-api.net/daybyday-register"
+curl -s -i -X POST -H "Content-Type: application/json" -d '{"name":"Test User","email":"test@example.com","code":"<the invite code>"}' "https://api.wallstreetsahead.ai/daybyday-register"
 ```
 
 `200` returns two lines, `apiUrl=` and `apiKey=`. Delete the test subscription

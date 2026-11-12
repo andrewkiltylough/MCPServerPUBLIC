@@ -8,7 +8,7 @@
 // protocol and nothing else may be printed there. Diagnostics go to stderr.
 //
 // What it contacts: the API gateway (by default
-// https://premind-apim.azure-api.net/daybyday), and nothing else. Each request
+// https://api.wallstreetsahead.ai/ClaudeCodePlugin), and nothing else. Each request
 // carries the user's API key in the Ocp-Apim-Subscription-Key header. The
 // gateway checks the key and reads the share with its own managed identity, so
 // no storage credential is ever on this machine.
@@ -33,7 +33,7 @@ const INSTRUCTIONS =
 /** Protocol versions this server can speak, newest first. */
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
-const DEFAULT_API_URL = 'https://premind-apim.azure-api.net/daybyday';
+const DEFAULT_API_URL = 'https://api.wallstreetsahead.ai/ClaudeCodePlugin';
 /** The share and folder the reports are published to. */
 const DEFAULT_SHARE = 'premind-stock';
 const DEFAULT_REMOTE_ROOT = 'SignalMoves/DayByDayRunner';

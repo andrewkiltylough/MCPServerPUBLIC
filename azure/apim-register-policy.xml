@@ -17,7 +17,7 @@
 
   Requires three named values (see azure/README.md section 8):
     daybyday-apim-resource-id   /subscriptions/.../service/<apim>
-    daybyday-api-url            https://<apim>.azure-api.net/daybyday
+    daybyday-api-url            https://api.wallstreetsahead.ai/ClaudeCodePlugin
     daybyday-acs-endpoint       https://<acs>.<region>.communication.azure.com
     daybyday-acs-sender         DoNotReply@<guid>.azurecomm.net
 

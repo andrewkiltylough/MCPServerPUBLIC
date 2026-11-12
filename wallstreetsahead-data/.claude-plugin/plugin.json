@@ -1,6 +1,6 @@
 {
   "name": "wallstreetsahead-data",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Downloads the WallStreetsAhead.ai ETF mover reports to a folder on your computer, so Claude can analyse the latest market data.",
   "author": { "name": "WallStreetsAhead.ai" },
   "homepage": "https://github.com/andrewkiltylough/MCPServerPUBLIC",
@@ -24,7 +24,7 @@
     "api_url": {
       "type": "string",
       "title": "API URL",
-      "description": "The WallStreetsAhead.ai API gateway. Leave blank to use https://premind-apim.azure-api.net/daybyday.",
+      "description": "The WallStreetsAhead.ai API gateway. Leave blank to use https://api.wallstreetsahead.ai/ClaudeCodePlugin.",
       "required": false
     }
   }

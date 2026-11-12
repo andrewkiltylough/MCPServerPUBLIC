@@ -22,7 +22,7 @@
 ; Self-service key issuance. The gateway creates the API Management subscription
 ; and returns the key; see azure\apim-register-policy.xml. Nothing secret lives
 ; here, only the public gateway address and whatever code the user types.
-#define RegisterUrl "https://premind-apim.azure-api.net/daybyday-register"
+#define RegisterUrl "https://api.wallstreetsahead.ai/daybyday-register"
 
 ; The one line the finish page tells the user to paste into Claude to prove the
 ; plugin is live. It names the tool outright rather than describing the task, so
@@ -90,7 +90,7 @@ Name: "claudedir"; Description: "Let Claude Code read {#DataFolder} from any ses
 ; outright what this is and what it needs. People arriving from the website have
 ; downloaded a .exe and may reasonably expect an application; what they are
 ; getting is a plugin that does nothing without Claude Code.
-WelcomeLabel2=This installs the WallStreetsAhead.ai plugin for Claude Code, Anthropic's coding agent. Claude Code must already be installed: the plugin gives it a market-data tool, it is not an application you open, and it does not work in the Claude chat at claude.ai, in the Claude mobile apps, or with any other AI assistant.%n%nThis is an early beta. Coverage has gaps, reports will change, and some of what it produces will be wrong, so check what it tells you rather than rely on it. You are among the first people to use it at all, and that support is worth a great deal - thank you. Tell us what breaks: @WallStreetAhead on X.%n%nNothing is installed outside your own user account and no administrator rights are needed.
+WelcomeLabel2=This installs the WallStreetsAhead.ai plugin for Claude Code, Anthropic's coding agent. Claude Code must already be installed: the plugin gives it a market-data tool, it is not an application you open, and it does not work in the Claude chat at claude.ai, in the Claude mobile apps, or with any other AI assistant.%n%nThis is an early beta. Coverage has gaps, reports will change, and some of what it produces will be wrong, so check what it tells you rather than rely on it. You are among the first people to use it at all, and that support is worth a great deal - thank you. Tell us what breaks: support@wallstreetsahead.ai.%n%nNothing is installed outside your own user account and no administrator rights are needed.
 
 ; The finish page text depends on whether the API key was entered, so it is set
 ; from code below.

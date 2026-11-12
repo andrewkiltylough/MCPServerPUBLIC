@@ -257,7 +257,7 @@ The tool needs a personal API key. Data is fetched through the team's Azure API 
 **If you set it up with `.mcp.json` as above**, create `C:\Users\<you>\.wallstreetsahead\wallstreetsahead.properties`:
 
 ```
-apiUrl=https://<gateway>.azure-api.net/daybyday
+apiUrl=https://api.wallstreetsahead.ai/ClaudeCodePlugin
 apiKey=<your API key>
 ```
 
