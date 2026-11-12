@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "wallstreetsahead-data": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/runtime/bin/java.exe",
+      "args": [
+        "-jar",
+        "${CLAUDE_PLUGIN_ROOT}/lib/wallstreetsahead-mcp.jar"
+      ],
+      "env": {
+        "WALLSTREETSAHEAD_LOCAL_ROOT": "C:\\WallStreetsAhead",
+        "WALLSTREETSAHEAD_API_URL": "${user_config.api_url}",
+        "WALLSTREETSAHEAD_API_KEY": "${user_config.api_key}"
+      }
+    }
+  }
+}

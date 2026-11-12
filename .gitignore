@@ -1,0 +1,7 @@
+server/target/
+*.part
+/bin/
+/target/
+/wallstreetsahead-plugin/lib/
+*.zip
+/wallstreetsahead-plugin/runtime/

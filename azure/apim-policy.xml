@@ -1,0 +1,38 @@
+<!--
+  API Management policy for the WallStreetsAhead.ai data API (apply at the API scope, "All operations").
+
+  The caller's subscription key (the API key) is checked by API Management before this runs.
+  This policy then:
+    - allows reads under the DayByDayRunner folder only
+    - calls Azure Files with the gateway's managed identity, so no storage key leaves Azure
+-->
+<policies>
+    <inbound>
+        <base />
+        <set-variable name="path" value="@(context.Request.MatchedParameters.GetValueOrDefault(&quot;path&quot;, &quot;&quot;))" />
+        <choose>
+            <when condition="@{ var path = (string)context.Variables[&quot;path&quot;]; var root = &quot;premind-stock/SignalMoves/DayByDayRunner&quot;; return path.Contains(&quot;..&quot;) || !(path == root || path.StartsWith(root + &quot;/&quot;)); }">
+                <return-response>
+                    <set-status code="403" reason="Forbidden" />
+                </return-response>
+            </when>
+        </choose>
+        <!-- the key is for the gateway only; never forward it to storage -->
+        <set-header name="Ocp-Apim-Subscription-Key" exists-action="delete" />
+        <set-header name="Authorization" exists-action="delete" />
+        <authentication-managed-identity resource="https://storage.azure.com/" />
+        <!-- Azure Files requires this header for OAuth over REST -->
+        <set-header name="x-ms-file-request-intent" exists-action="override">
+            <value>backup</value>
+        </set-header>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

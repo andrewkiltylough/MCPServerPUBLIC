@@ -1,0 +1,14 @@
+{
+  "name": "wallstreetsahead-local",
+  "owner": { "name": "WallStreetsAhead.ai" },
+  "metadata": {
+    "description": "WallStreetsAhead.ai tools for working with ETF mover reports on your own PC."
+  },
+  "plugins": [
+    {
+      "name": "wallstreetsahead-data",
+      "source": "./",
+      "description": "Fetches the WallStreetsAhead.ai ETF mover reports from Azure Files into the local data folder on request."
+    }
+  ]
+}

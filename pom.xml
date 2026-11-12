@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>ai.wallstreetsahead</groupId>
+  <artifactId>wallstreetsahead-mcp</artifactId>
+  <version>0.2.4</version>
+  <packaging>jar</packaging>
+  <name>WallStreetsAhead.ai MCP server</name>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <mcp.version>2.0.1</mcp.version>
+    <azure.fileshare.version>12.32.0</azure.fileshare.version>
+    <slf4j.version>2.0.16</slf4j.version>
+    <!-- The plugin folder handed to users. Claude reads the jar from its lib. -->
+    <plugin.dir>${project.basedir}/wallstreetsahead-plugin</plugin.dir>
+    <!--
+      jlink bundles a cut-down Java runtime into the plugin folder, so users need
+      no Java installed. Taken from the module list jdeps reports for the shaded
+      jar, plus jdk.crypto.ec, which jdeps cannot see: the TLS handshake with the
+      gateway needs it, and without it every fetch fails at connect time.
+    -->
+    <plugin.runtime.modules>java.base,java.desktop,java.management,java.naming,java.net.http,java.sql,jdk.unsupported,jdk.crypto.ec</plugin.runtime.modules>
+    <!-- -Dplugin.runtime.skip=true skips the jlink step on a quick dev build -->
+    <plugin.runtime.skip>false</plugin.runtime.skip>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.modelcontextprotocol.sdk</groupId>
+      <artifactId>mcp</artifactId>
+      <version>${mcp.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-storage-file-share</artifactId>
+      <version>${azure.fileshare.version}</version>
+    </dependency>
+    <!-- stdout carries the MCP protocol, so logging must go to stderr -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>wallstreetsahead-mcp</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>ai.wallstreetsahead.data.Main</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Puts the shaded jar into the plugin folder, so wallstreetsahead-plugin
+        is a complete, installable plugin after mvn package. Runs after shade
+        because plugins bound to the same phase run in the order declared here.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>copy-jar-into-plugin</id>
+            <phase>package</phase>
+            <goals><goal>copy-resources</goal></goals>
+            <configuration>
+              <outputDirectory>${plugin.dir}/lib</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}</directory>
+                  <includes><include>wallstreetsahead-mcp.jar</include></includes>
+                  <!-- a jar is binary: never filter it -->
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Builds the bundled Java runtime into the plugin folder. jlink refuses to
+        write into a folder that already exists, so the old one goes first.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>jlink-runtime</id>
+            <phase>package</phase>
+            <goals><goal>run</goal></goals>
+            <configuration>
+              <skip>${plugin.runtime.skip}</skip>
+              <target>
+                <delete dir="${plugin.dir}/runtime"/>
+                <exec executable="${java.home}/bin/jlink" failonerror="true">
+                  <arg value="--add-modules"/>
+                  <arg value="${plugin.runtime.modules}"/>
+                  <arg value="--strip-debug"/>
+                  <arg value="--no-header-files"/>
+                  <arg value="--no-man-pages"/>
+                  <arg value="--compress=zip-6"/>
+                  <arg value="--output"/>
+                  <arg file="${plugin.dir}/runtime"/>
+                </exec>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- mvn clean also empties the plugin folder's build outputs -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.4.0</version>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>${plugin.dir}/lib</directory>
+            </fileset>
+            <fileset>
+              <directory>${plugin.dir}/runtime</directory>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

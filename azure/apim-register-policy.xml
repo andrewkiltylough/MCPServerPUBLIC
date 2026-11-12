@@ -1,0 +1,259 @@
+<!--
+  API Management policy for the WallStreetsAhead.ai key registration API
+  (api-id "daybyday-register", path "daybyday-register", subscription NOT required).
+
+  The installer posts a name and an email address. This policy creates an API
+  Management subscription for that person using the gateway's own managed
+  identity, then EMAILS the key to the address given. The key is never returned
+  in the HTTP response.
+
+  That is the whole point of the design: the address is verified by the act of
+  delivering to it. Someone registering with an address they do not control
+  gets nothing, so an open endpoint is not an open door.
+
+  Nothing here is a secret the installer could hold: the installer knows only
+  the gateway URL. The credentials that create subscriptions and send mail
+  never leave Azure.
+
+  Requires three named values (see azure/README.md section 8):
+    daybyday-apim-resource-id   /subscriptions/.../service/<apim>
+    daybyday-api-url            https://<apim>.azure-api.net/daybyday
+    daybyday-acs-endpoint       https://<acs>.<region>.communication.azure.com
+    daybyday-acs-sender         DoNotReply@<guid>.azurecomm.net
+
+  Request  (application/json):  {"name":"...","email":"..."}
+  Response (text/plain):        apiUrl=...
+                                sent=...
+
+  The response is properties format because its only consumer is the installer,
+  which reads apiUrl straight into its settings and shows "sent" to the user.
+  Callers distinguish outcomes by status code:
+    200 issued and emailed            400 bad request
+    409 already issued for that email 502 Azure error
+-->
+<policies>
+    <inbound>
+        <base />
+
+        <!--
+          There is deliberately no rate limit here. This gateway runs on the
+          Consumption tier, which rejects rate-limit, rate-limit-by-key, quota
+          and quota-by-key, and has no built-in cache to count attempts with.
+
+          What limits the damage instead: the key goes to the mailbox, not to
+          the caller, so registering an address you do not own gains nothing;
+          and a second registration for the same address is refused, so an
+          address cannot be mailed repeatedly. A determined caller can still
+          cause one email per distinct address and leave a junk subscription
+          behind, both of which are visible in the portal. If that ever
+          happens, move to a paid tier and restore rate-limit-by-key.
+        -->
+
+        <choose>
+            <when condition='@(context.Request.Method != "POST")'>
+                <return-response>
+                    <set-status code="405" reason="Method Not Allowed" />
+                    <set-body>POST a JSON body with name and email.</set-body>
+                </return-response>
+            </when>
+        </choose>
+
+        <set-variable name="req" value="@(context.Request.Body.As&lt;JObject&gt;(true))" />
+        <set-variable name="name" value="@((((JObject)context.Variables[&quot;req&quot;])[&quot;name&quot;] ?? &quot;&quot;).ToString().Trim())" />
+        <set-variable name="email" value="@((((JObject)context.Variables[&quot;req&quot;])[&quot;email&quot;] ?? &quot;&quot;).ToString().Trim().ToLowerInvariant())" />
+
+        <choose>
+            <when condition="@(((string)context.Variables[&quot;name&quot;]).Length == 0 || !System.Text.RegularExpressions.Regex.IsMatch((string)context.Variables[&quot;email&quot;], @&quot;^[^@\s]+@[^@\s]+\.[^@\s]+$&quot;))">
+                <return-response>
+                    <set-status code="400" reason="Bad Request" />
+                    <set-body>Supply a name and a valid email address.</set-body>
+                </return-response>
+            </when>
+        </choose>
+
+        <!--
+          One subscription per email address. The id is a hash of the address
+          rather than the address itself: same input, same id, so a second
+          registration still collides and is refused below, but the resource
+          name gives nothing away.
+
+          That matters because a resource name travels further than the resource
+          does. Every create, update and delete is recorded in the Azure
+          Activity Log, which is kept for 90 days whatever happens to the
+          subscription, so an address in the name would outlive the record it
+          belongs to. The address is still held in plain text in the display
+          name, where it is deleted along with the subscription.
+        -->
+        <set-variable name="sid" value="@{ var email = (string)context.Variables[&quot;email&quot;]; var bytes = System.Text.Encoding.UTF8.GetBytes(email); var hash = System.Security.Cryptography.SHA256.Create().ComputeHash(bytes); return &quot;user-&quot; + string.Join(&quot;&quot;, hash.Select(b =&gt; b.ToString(&quot;x2&quot;))).Substring(0, 32); }" />
+
+        <authentication-managed-identity resource="https://management.azure.com/" output-token-variable-name="armToken" ignore-error="false" />
+
+        <!--
+          Refuse an address that already has a key. Re-sending would let anyone
+          trigger mail to someone else's inbox over and over, and the person
+          already has their key.
+        -->
+        <send-request mode="new" response-variable-name="existing" timeout="20" ignore-error="true">
+            <set-url>@("https://management.azure.com" + "{{daybyday-apim-resource-id}}" + "/subscriptions/" + (string)context.Variables["sid"] + "?api-version=2022-08-01")</set-url>
+            <set-method>GET</set-method>
+            <set-header name="Authorization" exists-action="override">
+                <value>@("Bearer " + (string)context.Variables["armToken"])</value>
+            </set-header>
+        </send-request>
+
+        <choose>
+            <when condition="@(((IResponse)context.Variables[&quot;existing&quot;]).StatusCode == 200)">
+                <return-response>
+                    <set-status code="409" reason="Conflict" />
+                    <set-body>A key has already been issued to that email address. Use the key from that email, or ask the administrator to reissue it.</set-body>
+                </return-response>
+            </when>
+        </choose>
+
+        <send-request mode="new" response-variable-name="created" timeout="20" ignore-error="true">
+            <set-url>@("https://management.azure.com" + "{{daybyday-apim-resource-id}}" + "/subscriptions/" + (string)context.Variables["sid"] + "?api-version=2022-08-01")</set-url>
+            <set-method>PUT</set-method>
+            <set-header name="Authorization" exists-action="override">
+                <value>@("Bearer " + (string)context.Variables["armToken"])</value>
+            </set-header>
+            <set-header name="Content-Type" exists-action="override">
+                <value>application/json</value>
+            </set-header>
+            <set-body>@{
+                var props = new JObject();
+                props["displayName"] = (string)context.Variables["name"] + " (" + (string)context.Variables["email"] + ")";
+                props["scope"] = "{{daybyday-apim-resource-id}}" + "/apis/daybyday";
+                props["state"] = "active";
+                props["allowTracing"] = false;
+                var body = new JObject();
+                body["properties"] = props;
+                return body.ToString();
+            }</set-body>
+        </send-request>
+
+        <choose>
+            <when condition="@(((IResponse)context.Variables[&quot;created&quot;]).StatusCode &gt;= 300)">
+                <return-response>
+                    <set-status code="502" reason="Bad Gateway" />
+                    <set-body>The key could not be created. Ask the administrator to check the gateway.</set-body>
+                </return-response>
+            </when>
+        </choose>
+
+        <!-- Create does not return the keys, so read them back explicitly. -->
+        <send-request mode="new" response-variable-name="secrets" timeout="20" ignore-error="true">
+            <set-url>@("https://management.azure.com" + "{{daybyday-apim-resource-id}}" + "/subscriptions/" + (string)context.Variables["sid"] + "/listSecrets?api-version=2022-08-01")</set-url>
+            <set-method>POST</set-method>
+            <set-header name="Authorization" exists-action="override">
+                <value>@("Bearer " + (string)context.Variables["armToken"])</value>
+            </set-header>
+        </send-request>
+
+        <choose>
+            <when condition="@(((IResponse)context.Variables[&quot;secrets&quot;]).StatusCode != 200)">
+                <return-response>
+                    <set-status code="502" reason="Bad Gateway" />
+                    <set-body>The key was created but could not be read back. Ask the administrator to send it to you.</set-body>
+                </return-response>
+            </when>
+        </choose>
+
+        <set-variable name="apiKey" value="@(((IResponse)context.Variables[&quot;secrets&quot;]).Body.As&lt;JObject&gt;()[&quot;primaryKey&quot;].ToString())" />
+
+        <!-- Send the key to the address. This is what verifies the address. -->
+        <authentication-managed-identity resource="https://communication.azure.com" output-token-variable-name="acsToken" ignore-error="false" />
+
+        <send-request mode="new" response-variable-name="mail" timeout="30" ignore-error="true">
+            <set-url>@("{{daybyday-acs-endpoint}}" + "/emails:send?api-version=2023-03-31")</set-url>
+            <set-method>POST</set-method>
+            <set-header name="Authorization" exists-action="override">
+                <value>@("Bearer " + (string)context.Variables["acsToken"])</value>
+            </set-header>
+            <set-header name="Content-Type" exists-action="override">
+                <value>application/json</value>
+            </set-header>
+            <set-body>@{
+                var name = (string)context.Variables["name"];
+                var email = (string)context.Variables["email"];
+                var key = (string)context.Variables["apiKey"];
+                var text =
+                    "Hello " + name + ",\n\n" +
+                    "Here is your WallStreetsAhead.ai API key.\n\n" +
+                    "API URL: {{daybyday-api-url}}\n" +
+                    "API key: " + key + "\n\n" +
+                    "Paste both into the installer, or into Claude with /plugin if you have\n" +
+                    "already finished installing.\n\n" +
+                    "This key is yours alone. Do not share it or paste it into a chat message.\n" +
+                    "It can be switched off if it is misused.\n\n" +
+                    "If you did not ask for this key, someone entered your address by mistake.\n" +
+                    "Nothing has been set up in your name beyond this key, and you can ignore\n" +
+                    "this email; the key will go unused.\n";
+
+                var to = new JObject();
+                to["address"] = email;
+                to["displayName"] = name;
+                var toList = new JArray();
+                toList.Add(to);
+                var recipients = new JObject();
+                recipients["to"] = toList;
+
+                var content = new JObject();
+                content["subject"] = "Your WallStreetsAhead.ai API key";
+                content["plainText"] = text;
+
+                var body = new JObject();
+                body["senderAddress"] = "{{daybyday-acs-sender}}";
+                body["recipients"] = recipients;
+                body["content"] = content;
+                return body.ToString();
+            }</set-body>
+        </send-request>
+
+        <!--
+          If the mail did not go, remove the subscription again. Leaving it would
+          lock the address out: the next attempt would match the 409 above and
+          the person would never receive a key they cannot see.
+        -->
+        <choose>
+            <when condition="@(((IResponse)context.Variables[&quot;mail&quot;]).StatusCode &gt;= 300)">
+                <send-request mode="new" response-variable-name="rollback" timeout="20" ignore-error="true">
+                    <set-url>@("https://management.azure.com" + "{{daybyday-apim-resource-id}}" + "/subscriptions/" + (string)context.Variables["sid"] + "?api-version=2022-08-01")</set-url>
+                    <set-method>DELETE</set-method>
+                    <set-header name="Authorization" exists-action="override">
+                        <value>@("Bearer " + (string)context.Variables["armToken"])</value>
+                    </set-header>
+                    <!-- Resource Manager refuses this delete without a precondition. -->
+                    <set-header name="If-Match" exists-action="override">
+                        <value>*</value>
+                    </set-header>
+                </send-request>
+                <return-response>
+                    <set-status code="502" reason="Bad Gateway" />
+                    <set-body>The key could not be emailed, so nothing was issued. Try again, or ask the administrator.</set-body>
+                </return-response>
+            </when>
+        </choose>
+
+        <return-response>
+            <set-status code="200" reason="OK" />
+            <set-header name="Content-Type" exists-action="override">
+                <value>text/plain; charset=utf-8</value>
+            </set-header>
+            <set-header name="Cache-Control" exists-action="override">
+                <value>no-store</value>
+            </set-header>
+            <set-body>@{
+                return "apiUrl={{daybyday-api-url}}\nsent=" + (string)context.Variables["email"] + "\n";
+            }</set-body>
+        </return-response>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
