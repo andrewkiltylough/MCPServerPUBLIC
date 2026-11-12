@@ -1,0 +1,14 @@
+{
+  "name": "wallstreetsahead",
+  "owner": { "name": "WallStreetsAhead.ai" },
+  "metadata": {
+    "description": "WallStreetsAhead.ai tools for working with ETF mover reports in Claude."
+  },
+  "plugins": [
+    {
+      "name": "wallstreetsahead-data",
+      "source": "./wallstreetsahead-data",
+      "description": "Downloads the WallStreetsAhead.ai ETF mover reports to a folder on your computer, so Claude can analyse the latest market data."
+    }
+  ]
+}

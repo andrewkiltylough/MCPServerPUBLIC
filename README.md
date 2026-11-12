@@ -4,6 +4,20 @@ This adds a tool to Claude that downloads the WallStreetsAhead.ai ETF mover repo
 
 It runs on your own PC. Nothing is installed on a server.
 
+## Install it from GitHub (any OS, needs Node.js)
+
+The [`wallstreetsahead-data`](wallstreetsahead-data) folder is the plugin as published to Claude's plugin directory. It runs on Windows, macOS and Linux with Node.js 18 or later, and needs no build:
+
+```bash
+claude plugin marketplace add andrewkiltylough/MCPServerPUBLIC
+```
+
+```bash
+claude plugin install wallstreetsahead-data@wallstreetsahead
+```
+
+See [its README](wallstreetsahead-data/README.md) for getting an API key, settings, and exactly what it sends and stores. The Java build and Windows installer described below are unchanged and remain available for Windows users who do not have Node.js.
+
 ## Install it (the easy way)
 
 Download `wallstreetsahead-plugin-<version>-setup.exe` and run it. It installs the plugin for your user only, so there is no administrator prompt, creates the data folder, and registers the plugin with Claude. Nothing else needs to be installed first — it carries its own copy of Java.

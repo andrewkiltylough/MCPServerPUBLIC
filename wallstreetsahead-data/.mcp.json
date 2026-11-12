@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "wallstreetsahead-data": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/index.mjs"],
+      "env": {
+        "WALLSTREETSAHEAD_API_KEY": "${user_config.api_key}",
+        "WALLSTREETSAHEAD_API_URL": "${user_config.api_url}",
+        "WALLSTREETSAHEAD_LOCAL_ROOT": "${user_config.data_folder}"
+      }
+    }
+  }
+}

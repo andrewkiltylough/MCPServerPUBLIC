@@ -1,0 +1,31 @@
+{
+  "name": "wallstreetsahead-data",
+  "version": "0.3.0",
+  "description": "Downloads the WallStreetsAhead.ai ETF mover reports to a folder on your computer, so Claude can analyse the latest market data.",
+  "author": { "name": "WallStreetsAhead.ai" },
+  "homepage": "https://github.com/andrewkiltylough/MCPServerPUBLIC",
+  "repository": "https://github.com/andrewkiltylough/MCPServerPUBLIC",
+  "license": "MIT",
+  "keywords": ["etf", "market-data", "stocks", "finance", "azure"],
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "API key",
+      "description": "Your personal WallStreetsAhead.ai API key. See the plugin README for how to get one. Leave blank if the Windows installer already saved it.",
+      "required": false,
+      "sensitive": true
+    },
+    "data_folder": {
+      "type": "string",
+      "title": "Data folder",
+      "description": "Where the reports are saved. Leave blank for C:\\WallStreetsAhead on Windows or ~/WallStreetsAhead on macOS and Linux.",
+      "required": false
+    },
+    "api_url": {
+      "type": "string",
+      "title": "API URL",
+      "description": "The WallStreetsAhead.ai API gateway. Leave blank to use https://premind-apim.azure-api.net/daybyday.",
+      "required": false
+    }
+  }
+}
