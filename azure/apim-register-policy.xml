@@ -12,14 +12,17 @@
   gets nothing, so an open endpoint is not an open door.
 
   Nothing here is a secret the installer could hold: the installer knows only
-  the gateway URL. The credentials that create subscriptions and send mail
-  never leave Azure.
+  the gateway URL. Subscriptions are created with the gateway's own managed
+  identity, which never leaves Azure; the one credential stored here is the
+  Resend API key, held as a secret named value and readable only through the
+  control plane.
 
-  Requires three named values (see azure/README.md section 8):
+  Requires four named values (see azure/README.md section 8):
     daybyday-apim-resource-id   /subscriptions/.../service/<apim>
     daybyday-api-url            https://api.wallstreetsahead.ai/ClaudeCodePlugin
-    daybyday-acs-endpoint       https://<acs>.<region>.communication.azure.com
-    daybyday-acs-sender         DoNotReply@<guid>.azurecomm.net
+    wsa-resend-key              re_... (secret; the Resend API key)
+    wsa-mail-sender             WallStreetsAhead.ai <support@notifications.wallstreetsahead.ai>
+    wsa-mail-reply-to           support@wallstreetsahead.ai
 
   Request  (application/json):  {"name":"...","email":"..."}
   Response (text/plain):        apiUrl=...
@@ -160,14 +163,26 @@
 
         <set-variable name="apiKey" value="@(((IResponse)context.Variables[&quot;secrets&quot;]).Body.As&lt;JObject&gt;()[&quot;primaryKey&quot;].ToString())" />
 
-        <!-- Send the key to the address. This is what verifies the address. -->
-        <authentication-managed-identity resource="https://communication.azure.com" output-token-variable-name="acsToken" ignore-error="false" />
+        <!--
+          Send the key to the address. This is what verifies the address.
 
+          This used to go through Azure Communication Services. ACS accepted
+          every message with a 202 and then never sent any of them: operations
+          sat at status "Running" for hours with no error, so nothing bounced
+          and nothing arrived. Microsoft announced on 23 September 2026 that ACS
+          retires on 30 September 2028 and the Email service is in maintenance
+          mode, with quota increases handled case by case - not a service worth
+          debugging, let alone building on.
+
+          Resend is a plain HTTPS call with a bearer token, so the shape here is
+          unchanged: one send-request, and the rollback below still keys on the
+          status code.
+        -->
         <send-request mode="new" response-variable-name="mail" timeout="30" ignore-error="true">
-            <set-url>@("{{daybyday-acs-endpoint}}" + "/emails:send?api-version=2023-03-31")</set-url>
+            <set-url>https://api.resend.com/emails</set-url>
             <set-method>POST</set-method>
             <set-header name="Authorization" exists-action="override">
-                <value>@("Bearer " + (string)context.Variables["acsToken"])</value>
+                <value>@("Bearer " + "{{wsa-resend-key}}")</value>
             </set-header>
             <set-header name="Content-Type" exists-action="override">
                 <value>application/json</value>
@@ -189,34 +204,20 @@
                     "Nothing has been set up in your name beyond this key, and you can ignore\n" +
                     "this email; the key will go unused.\n";
 
-                var to = new JObject();
-                to["address"] = email;
-                to["displayName"] = name;
                 var toList = new JArray();
-                toList.Add(to);
-                var recipients = new JObject();
-                recipients["to"] = toList;
+                toList.Add(email);
 
-                var content = new JObject();
-                content["subject"] = "Your WallStreetsAhead.ai API key";
-                content["plainText"] = text;
-
-                /* Sent from the notifications subdomain, because that is the
-                   only domain ACS will verify: its SPF record has to be exactly
-                   the string Azure dictates, and the apex record must keep
-                   Google Workspace's include. Replies would land nowhere
-                   useful, so they are pointed at the real support mailbox. */
-                var replyTo = new JObject();
-                replyTo["address"] = "{{daybyday-acs-reply-to}}";
-                replyTo["displayName"] = "WallStreetsAhead.ai";
-                var replyList = new JArray();
-                replyList.Add(replyTo);
-
+                /* Sent from the notifications subdomain rather than the apex so
+                   that a problem with bulk sending can never affect ordinary
+                   mail to wallstreetsahead.ai. Replies would land nowhere on a
+                   send-only subdomain, so they are pointed at the real support
+                   mailbox. */
                 var body = new JObject();
-                body["senderAddress"] = "{{daybyday-acs-sender}}";
-                body["replyTo"] = replyList;
-                body["recipients"] = recipients;
-                body["content"] = content;
+                body["from"] = "{{wsa-mail-sender}}";
+                body["to"] = toList;
+                body["reply_to"] = "{{wsa-mail-reply-to}}";
+                body["subject"] = "Your WallStreetsAhead.ai API key";
+                body["text"] = text;
                 return body.ToString();
             }</set-body>
         </send-request>

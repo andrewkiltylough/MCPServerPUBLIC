@@ -206,8 +206,16 @@ keys and nothing else. The built-in **API Management Service Contributor** also
 works but can delete the service itself.
 
 ```bash
-az role definition create --role-definition "{\"Name\":\"DayByDay subscription issuer\",\"IsCustom\":true,\"Description\":\"Create API Management subscriptions and read their keys.\",\"Actions\":[\"Microsoft.ApiManagement/service/subscriptions/read\",\"Microsoft.ApiManagement/service/subscriptions/write\",\"Microsoft.ApiManagement/service/subscriptions/listSecrets/action\"],\"AssignableScopes\":[\"$APIM_ID\"]}"
+az role definition create --role-definition "{\"Name\":\"DayByDay subscription issuer\",\"IsCustom\":true,\"Description\":\"Create API Management subscriptions, read their keys, and remove one when the key email fails.\",\"Actions\":[\"Microsoft.ApiManagement/service/subscriptions/read\",\"Microsoft.ApiManagement/service/subscriptions/write\",\"Microsoft.ApiManagement/service/subscriptions/listSecrets/action\",\"Microsoft.ApiManagement/service/subscriptions/delete\"],\"AssignableScopes\":[\"$APIM_ID\"]}"
 ```
+
+> **`delete` is not optional.** The register policy creates the subscription
+> before it sends the key, and deletes it again if the mail does not go. Without
+> this action that rollback gets a 403 and the subscription survives, so the
+> address matches the 409 duplicate check forever and that person can never be
+> issued a key — the exact outcome the rollback exists to prevent. The role was
+> created without it, and the bug stayed invisible for as long as the mail
+> provider kept returning success.
 
 ```bash
 az role assignment create --assignee-object-id $(az apim show -g $RG -n $APIM --query identity.principalId -o tsv) --assignee-principal-type ServicePrincipal --role "DayByDay subscription issuer" --scope $APIM_ID
