@@ -201,8 +201,20 @@
                 content["subject"] = "Your WallStreetsAhead.ai API key";
                 content["plainText"] = text;
 
+                /* Sent from the notifications subdomain, because that is the
+                   only domain ACS will verify: its SPF record has to be exactly
+                   the string Azure dictates, and the apex record must keep
+                   Google Workspace's include. Replies would land nowhere
+                   useful, so they are pointed at the real support mailbox. */
+                var replyTo = new JObject();
+                replyTo["address"] = "{{daybyday-acs-reply-to}}";
+                replyTo["displayName"] = "WallStreetsAhead.ai";
+                var replyList = new JArray();
+                replyList.Add(replyTo);
+
                 var body = new JObject();
                 body["senderAddress"] = "{{daybyday-acs-sender}}";
+                body["replyTo"] = replyList;
                 body["recipients"] = recipients;
                 body["content"] = content;
                 return body.ToString();
