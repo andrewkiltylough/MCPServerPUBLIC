@@ -22,6 +22,8 @@
 ; Self-service key issuance. The gateway creates the API Management subscription
 ; and returns the key; see azure\apim-register-policy.xml. Nothing secret lives
 ; here, only the public gateway address and whatever code the user types.
+; The gateway address the plugin talks to, and the open endpoint that issues keys.
+#define ApiUrl "https://api.wallstreetsahead.ai/ClaudeCodePlugin"
 #define RegisterUrl "https://api.wallstreetsahead.ai/daybyday-register"
 
 ; The one line the finish page tells the user to paste into Claude to prove the
@@ -367,6 +369,12 @@ begin
   ApiPage.Add('API key:', True);
   ApiPage.Values[0] := ReadSetting('apiUrl');
   ApiPage.Values[1] := ReadSetting('apiKey');
+  { A setup from before the gateway moved has the retired address saved, and
+    that path now returns 404. Offering it back would have the person confirm
+    a dead URL. The key itself still works against the new address. }
+  if Pos('azure-api.net/daybyday', LowerCase(ApiPage.Values[0])) > 0 then
+    if Pos('daybyday-register', LowerCase(ApiPage.Values[0])) = 0 then
+      ApiPage.Values[0] := '{#ApiUrl}';
   if ApiPage.Values[0] = '' then
     ApiPage.Values[0] := 'https://';
 end;

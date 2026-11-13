@@ -6,7 +6,7 @@
 
   <groupId>ai.wallstreetsahead</groupId>
   <artifactId>wallstreetsahead-mcp</artifactId>
-  <version>0.2.5</version>
+  <version>0.2.6</version>
   <packaging>jar</packaging>
   <name>WallStreetsAhead.ai MCP server</name>
 

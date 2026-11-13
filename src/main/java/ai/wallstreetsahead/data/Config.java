@@ -49,6 +49,9 @@ public record Config(String apiUrl, String apiKey, String shareName, String remo
 	 * premindstock). These two are addresses in someone else's system, not names
 	 * of this tool, so they did not change when it was renamed.
 	 */
+	/** Where the gateway lives now; see {@link #migrateRetiredUrl(String)}. */
+	static final String CURRENT_API_URL = "https://api.wallstreetsahead.ai/ClaudeCodePlugin";
+
 	private static final String DEFAULT_SHARE = "premind-stock";
 	/** Folder in the share that holds the ETF_* report folders. */
 	private static final String DEFAULT_REMOTE_ROOT = "SignalMoves/DayByDayRunner";
@@ -61,7 +64,7 @@ public record Config(String apiUrl, String apiKey, String shareName, String remo
 		Path settingsFile = settingsFilePath();
 		Properties file = load(settingsFile);
 
-		String apiUrl = trimSlashes(firstNonBlank(env(ENV_API_URL), file.getProperty(KEY_API_URL)));
+		String apiUrl = migrateRetiredUrl(trimSlashes(firstNonBlank(env(ENV_API_URL), file.getProperty(KEY_API_URL))));
 		String apiKey = firstNonBlank(env(ENV_API_KEY), file.getProperty(KEY_API_KEY));
 		String share = firstNonBlank(env(ENV_SHARE), file.getProperty(KEY_SHARE), DEFAULT_SHARE);
 		String remoteRoot = normaliseRemote(
@@ -69,6 +72,31 @@ public record Config(String apiUrl, String apiKey, String shareName, String remo
 		String local = firstNonBlank(env(ENV_LOCAL_ROOT), file.getProperty(KEY_LOCAL_ROOT), defaultLocalRoot());
 		return new Config(apiUrl, apiKey, share, remoteRoot, Paths.get(local).toAbsolutePath().normalize(),
 				settingsFile);
+	}
+
+	/**
+	 * Points a stored pre-rename gateway address at the current one.
+	 *
+	 * The API moved from {@code premind-apim.azure-api.net/daybyday} to
+	 * {@code api.wallstreetsahead.ai/ClaudeCodePlugin}, and the old path now
+	 * returns 404. Anyone who installed before that has the dead address saved in
+	 * their settings file, or inherits it from the pre-rename
+	 * {@code .daybyday/daybyday.properties}, and their plugin simply stops
+	 * working with no clue as to why.
+	 *
+	 * Subscription keys were unaffected by the move, so the saved key is still
+	 * valid against the new address. Rewriting the one dead value here fixes
+	 * those installs without asking anyone to reinstall or edit anything.
+	 */
+	static String migrateRetiredUrl(String url) {
+		if (url == null) {
+			return null;
+		}
+		String lower = url.toLowerCase(java.util.Locale.ROOT);
+		if (lower.endsWith("azure-api.net/daybyday") || lower.contains("azure-api.net/daybyday/")) {
+			return CURRENT_API_URL;
+		}
+		return url;
 	}
 
 	/**

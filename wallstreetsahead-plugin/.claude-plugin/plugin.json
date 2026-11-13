@@ -1,6 +1,6 @@
 {
   "name": "wallstreetsahead-data",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Fetches the WallStreetsAhead.ai ETF mover reports from Azure Files into the local data folder on request.",
   "author": { "name": "WallStreetsAhead.ai" },
   "userConfig": {

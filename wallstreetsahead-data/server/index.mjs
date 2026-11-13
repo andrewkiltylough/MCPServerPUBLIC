@@ -56,6 +56,24 @@ const MAX_FAILURES_SHOWN = 20;
  * Windows installer writes, otherwise from the default. The API key has no
  * default, is only ever sent to the gateway, and is never logged or returned.
  */
+/**
+ * Points a stored pre-rename gateway address at the current one.
+ *
+ * The API moved from premind-apim.azure-api.net/daybyday to
+ * api.wallstreetsahead.ai/ClaudeCodePlugin, and the old path now returns 404.
+ * A settings file written before that holds the dead address, and the plugin
+ * stops working with no clue as to why. Keys were unaffected by the move, so
+ * rewriting the one dead value repairs those installs with nothing to edit.
+ *
+ * daybyday-register is deliberately not matched: that path is still live.
+ */
+function migrateRetiredUrl(url) {
+  if (!url) return url;
+  const lower = url.toLowerCase();
+  const retired = lower.endsWith('azure-api.net/daybyday') || lower.includes('azure-api.net/daybyday/');
+  return retired ? DEFAULT_API_URL : url;
+}
+
 function loadConfig() {
   const settingsFile = settingsFilePath();
   let file = {};
@@ -66,7 +84,7 @@ function loadConfig() {
   }
   const local = firstNonBlank(env('LOCAL_ROOT'), file.localRoot, defaultLocalRoot());
   return {
-    apiUrl: trimSlashes(firstNonBlank(env('API_URL'), file.apiUrl, DEFAULT_API_URL)),
+    apiUrl: migrateRetiredUrl(trimSlashes(firstNonBlank(env('API_URL'), file.apiUrl, DEFAULT_API_URL))),
     apiKey: firstNonBlank(env('API_KEY'), file.apiKey),
     shareName: firstNonBlank(env('SHARE_NAME'), file.shareName, DEFAULT_SHARE),
     remoteRoot: normaliseRemote(firstNonBlank(env('REMOTE_ROOT'), file.remoteRoot, DEFAULT_REMOTE_ROOT)),
