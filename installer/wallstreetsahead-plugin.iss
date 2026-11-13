@@ -54,6 +54,9 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableDirPage=auto
 ; Per-user install, so no UAC prompt and no elevation.
+; Keep a log, so a failed registration leaves something to read afterwards.
+; It lands in %TEMP%Setup Log <date> #NNN.txt.
+SetupLogging=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -184,6 +187,62 @@ end;
   PATH of a fresh process; the known locations are checked first and `where` is
   the fallback.
 }
+{
+  The Claude desktop app ships its own copy of the CLI and does not put it on
+  the PATH or in any of the per-user locations above. It lives under
+  %APPDATA%\Claude\claude-code\<version>\<hash>\claude.exe, so both levels have
+  to be walked. Someone who installed the desktop app and never the standalone
+  CLI has a perfectly working Claude and nothing the checks above can see,
+  which left the plugin unregistered with no way to tell why.
+
+  Highest version wins, because an upgraded app leaves the older folders in
+  place and the newest is the one actually in use.
+}
+function FindDesktopClaude(): String;
+var
+  Root, Candidate: String;
+  VerRec, HashRec: TFindRec;
+  Best, Current: Int64;
+begin
+  Result := '';
+  Best := 0;
+  Root := AddBackslash(GetEnv('APPDATA')) + 'Claude\claude-code\';
+  if not DirExists(Root) then
+    Exit;
+  if not FindFirst(Root + '*', VerRec) then
+    Exit;
+  try
+    repeat
+      if (VerRec.Name <> '.') and (VerRec.Name <> '..')
+         and ((VerRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0)
+         and StrToVersion(VerRec.Name, Current)
+         and ((Best = 0) or (ComparePackedVersion(Current, Best) > 0)) then
+      begin
+        if FindFirst(Root + VerRec.Name + '\*', HashRec) then
+        try
+          repeat
+            if (HashRec.Name <> '.') and (HashRec.Name <> '..')
+               and ((HashRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0) then
+            begin
+              Candidate := Root + VerRec.Name + '\' + HashRec.Name + '\claude.exe';
+              if FileExists(Candidate) then
+              begin
+                Result := Candidate;
+                Best := Current;
+                Break;
+              end;
+            end;
+          until not FindNext(HashRec);
+        finally
+          FindClose(HashRec);
+        end;
+      end;
+    until not FindNext(VerRec);
+  finally
+    FindClose(VerRec);
+  end;
+end;
+
 function FindClaude(): String;
 var
   Candidates: TArrayOfString;
@@ -200,8 +259,16 @@ begin
     if FileExists(Candidates[I]) then
     begin
       Result := Candidates[I];
+      Log('Claude CLI found at a known path: ' + Result);
       Exit;
     end;
+
+  Result := FindDesktopClaude();
+  if Result <> '' then
+  begin
+    Log('Claude CLI found in the desktop app: ' + Result);
+    Exit;
+  end;
 
   TempFile := ExpandConstant('{tmp}\claude-path.txt');
   if Exec(ExpandConstant('{cmd}'), '/c where claude > "' + TempFile + '" 2>nul',
@@ -209,6 +276,11 @@ begin
     if (Code = 0) and LoadStringsFromFile(TempFile, Lines) and (GetArrayLength(Lines) > 0) then
       if FileExists(Trim(Lines[0])) then
         Result := Trim(Lines[0]);
+
+  if Result <> '' then
+    Log('Claude CLI found on the PATH: ' + Result)
+  else
+    Log('Claude CLI not found: checked the known paths, the desktop app folder and the PATH.');
 end;
 
 { Runs one claude subcommand. Returns True when it exits 0. }
@@ -218,6 +290,9 @@ var
 begin
   Result := Exec(ExpandConstant('{cmd}'), '/c ""' + ClaudeExe + '" ' + Args + '"',
                  '', SW_HIDE, ewWaitUntilTerminated, Code) and (Code = 0);
+  { Registration failing used to leave only a line on the finish page, which is
+    gone the moment the window closes. }
+  Log('claude ' + Args + ' -> exit ' + IntToStr(Code));
 end;
 
 function JsonEscape(const S: String): String;
