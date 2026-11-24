@@ -25,7 +25,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 const SERVER_NAME = 'wallstreetsahead-data';
-const SERVER_VERSION = '0.3.3';
+const SERVER_VERSION = '0.3.4';
 const INSTRUCTIONS =
   'Fetches the ETF mover reports from Azure Files into the local data folder. ' +
   'Call check_new_data to see what is missing, then fetch_data to download it.';
@@ -474,6 +474,7 @@ const FILTER_PROPERTIES = {
 const TOOLS = [
   {
     name: 'local_status',
+    title: 'Local data status',
     description:
       'Show the local data folder: how many ETF folders it has and the newest date folder in each. Does not contact Azure.',
     properties: {},
@@ -483,6 +484,7 @@ const TOOLS = [
   },
   {
     name: 'check_new_data',
+    title: 'Check for new data',
     description:
       'Compare Azure with the local folder and report which report files are missing or changed, without downloading anything.',
     properties: FILTER_PROPERTIES,
@@ -492,6 +494,7 @@ const TOOLS = [
   },
   {
     name: 'fetch_data',
+    title: 'Fetch new data',
     description:
       'Download report files that are missing or changed locally. Never deletes local files. ' +
       'By default only checks from a few days before the newest local date folder.',
@@ -502,6 +505,7 @@ const TOOLS = [
   },
   {
     name: 'list_remote',
+    title: 'List remote folder',
     description: 'List the folders and files at one path in the Azure file share, relative to the configured root.',
     properties: {
       path: { type: 'string', description: 'Folder path, for example ETF_SPY or ETF_SPY/10-09-2026. Empty for the root.' },
@@ -682,9 +686,10 @@ function replyError(id, code, message) {
 function toolList() {
   return TOOLS.map((t) => ({
     name: t.name,
+    title: t.title,
     description: t.description,
     inputSchema: { type: 'object', properties: t.properties },
-    annotations: { readOnlyHint: t.readOnly, destructiveHint: false, idempotentHint: true, openWorldHint: t.openWorld },
+    annotations: { title: t.title, readOnlyHint: t.readOnly, destructiveHint: false, idempotentHint: true, openWorldHint: t.openWorld },
   }));
 }
 

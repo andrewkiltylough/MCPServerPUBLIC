@@ -68,6 +68,13 @@ If you used the WallStreetsAhead.ai Windows installer, the plugin also reads the
 
 `check_new_data` and `fetch_data` accept an optional `etf` (such as `SPY`), a `since` and `until` date range, and `full` to recheck the whole history.
 
+## Example prompts
+
+- "Get the latest SPY data." Claude checks what is missing for SPY, downloads only that, and tells you how many files arrived and for which dates.
+- "How current is my market data?" Claude reads your data folder without going online and shows the newest date for each ETF.
+- "Fetch today's data, then summarise which XLK holdings moved most in the latest report." Claude brings the folder up to date, then reads the newest XLK report and describes the biggest moves.
+- "Check for any gaps in my QQQ history since 2026-09-01 and fill them." Claude rechecks that date range and downloads any files that are missing or changed.
+
 ## What it sends, fetches and stores
 
 The plugin runs a small server, [`server/index.mjs`](server/index.mjs), on your computer. It is one readable JavaScript file with no dependencies.
@@ -79,6 +86,8 @@ The plugin runs a small server, [`server/index.mjs`](server/index.mjs), on your 
 - **It reads:** your data folder, to see what you already have, and the optional settings file above.
 
 Requesting an API key sends the name and email address you type to `https://api.wallstreetsahead.ai/daybyday-register`, which emails the key to that address. The plugin itself never sends your name or email.
+
+The gateway logs which key made each request, when, the file asked for, and the network address it came from, to meter usage and spot abuse. The full [privacy policy](https://wallstreetsahead.ai/privacy.html) says what is collected, why, how long it is kept, and how to have it deleted.
 
 ## Troubleshooting
 
