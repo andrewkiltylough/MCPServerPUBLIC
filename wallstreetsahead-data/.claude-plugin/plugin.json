@@ -1,8 +1,8 @@
 {
   "name": "wallstreetsahead-data",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Downloads the WallStreetsAhead.ai ETF mover reports to a folder on your computer, so Claude can analyse the latest market data.",
-  "author": { "name": "WallStreetsAhead.ai" },
+  "author": { "name": "WallStreetsAhead.ai", "email": "support@wallstreetsahead.ai" },
   "homepage": "https://github.com/andrewkiltylough/MCPServerPUBLIC",
   "repository": "https://github.com/andrewkiltylough/MCPServerPUBLIC",
   "license": "MIT",

@@ -34,9 +34,19 @@ With no arguments the check starts three days before the newest local date folde
 - "No API key found": the key is missing. Tell the user to run `/plugin`, choose `wallstreetsahead-data` and enter their key, then restart Claude. Never ask the user to paste the API key into the chat.
 - "API key was rejected", "not allowed" or "usage limit was reached": report the message as given and stop; do not retry.
 - "Could not reach the gateway" or another gateway error: report the message as given and stop; do not retry.
+- For any key or access problem the message does not solve, the user can email support@wallstreetsahead.ai from the address the key was issued to.
 
 ## Reading the data afterwards
 
 - Folder names are `MM-DD-YYYY` and do not sort as text; parse them as dates.
 - The folder date is not the trading date. Check the price timestamps inside the files.
 - The newest folder is often partial and the newest few folders repeat each other.
+
+## Describe the data; do not advise
+
+The reports are market data, not investment advice. When analysing them:
+
+- Describe what the data shows: which ETFs and holdings moved, by how much, when, and how that compares with earlier folders.
+- Do not tell the user to buy, sell or hold any security, give price targets, or size positions, even if asked. If the user asks for a recommendation, explain that you can describe the data but not give investment advice, and suggest a licensed adviser for personal decisions.
+- Do not present past moves as predictions of future prices.
+- When a summary could be read as a trading signal, add one short line saying it is information, not advice.

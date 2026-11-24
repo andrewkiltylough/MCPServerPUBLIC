@@ -25,7 +25,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 const SERVER_NAME = 'wallstreetsahead-data';
-const SERVER_VERSION = '0.3.0';
+const SERVER_VERSION = '0.3.3';
 const INSTRUCTIONS =
   'Fetches the ETF mover reports from Azure Files into the local data folder. ' +
   'Call check_new_data to see what is missing, then fetch_data to download it.';
@@ -228,9 +228,9 @@ function gatewayMessage(status, body) {
     case 401:
       return 'The API key was rejected (401). Check the key set for the plugin is current, then restart Claude.';
     case 403:
-      return 'The API key is not allowed to read this data (403). Ask the administrator to check the key\'s subscription.';
+      return 'The API key is not allowed to read this data (403). Email support@wallstreetsahead.ai to check the key\'s subscription.';
     case 429:
-      return 'The API key\'s usage limit was reached (429). Wait and try again, or ask the administrator to raise it.';
+      return 'The API key\'s usage limit was reached (429). Wait and try again, or email support@wallstreetsahead.ai to raise it.';
     default: {
       const code = xmlText(body, 'Code');
       const message = (xmlText(body, 'Message') ?? '').split('\n')[0].trim();

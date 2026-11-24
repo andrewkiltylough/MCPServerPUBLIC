@@ -108,7 +108,7 @@
             <when condition="@(((IResponse)context.Variables[&quot;existing&quot;]).StatusCode == 200)">
                 <return-response>
                     <set-status code="409" reason="Conflict" />
-                    <set-body>A key has already been issued to that email address. Use the key from that email, or ask the administrator to reissue it.</set-body>
+                    <set-body>A key has already been issued to that email address. Use the key from that email, or email support@wallstreetsahead.ai to have it reissued.</set-body>
                 </return-response>
             </when>
         </choose>
@@ -138,7 +138,7 @@
             <when condition="@(((IResponse)context.Variables[&quot;created&quot;]).StatusCode &gt;= 300)">
                 <return-response>
                     <set-status code="502" reason="Bad Gateway" />
-                    <set-body>The key could not be created. Ask the administrator to check the gateway.</set-body>
+                    <set-body>The key could not be created. Email support@wallstreetsahead.ai.</set-body>
                 </return-response>
             </when>
         </choose>
@@ -156,7 +156,7 @@
             <when condition="@(((IResponse)context.Variables[&quot;secrets&quot;]).StatusCode != 200)">
                 <return-response>
                     <set-status code="502" reason="Bad Gateway" />
-                    <set-body>The key was created but could not be read back. Ask the administrator to send it to you.</set-body>
+                    <set-body>The key was created but could not be read back. Email support@wallstreetsahead.ai to have it sent to you.</set-body>
                 </return-response>
             </when>
         </choose>
@@ -242,7 +242,7 @@
                 </send-request>
                 <return-response>
                     <set-status code="502" reason="Bad Gateway" />
-                    <set-body>The key could not be emailed, so nothing was issued. Try again, or ask the administrator.</set-body>
+                    <set-body>The key could not be emailed, so nothing was issued. Try again, or email support@wallstreetsahead.ai.</set-body>
                 </return-response>
             </when>
         </choose>

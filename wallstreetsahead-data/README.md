@@ -4,6 +4,8 @@ This plugin lets Claude download the WallStreetsAhead.ai ETF mover reports to a 
 
 It works in Claude Code and the Claude desktop app on Windows, macOS and Linux.
 
+> **Not investment advice.** The reports are market data for research and information only. Neither WallStreetsAhead.ai nor Claude's analysis of the reports is financial, investment or trading advice, and nothing here is a recommendation to buy or sell any security. Past moves do not predict future results. Make your own decisions, or consult a licensed adviser.
+
 ## What you need
 
 - [Node.js](https://nodejs.org) 18 or later, with `node` on your PATH. Check with `node --version`.
@@ -85,8 +87,14 @@ Requesting an API key sends the name and email address you type to `https://api.
 | `node` not found, or the server fails to start | Install Node.js 18 or later, then restart Claude. |
 | "No API key found" | Run `/plugin`, choose `wallstreetsahead-data`, enter your key, then start a new session. |
 | "The API key was rejected (401)" | The key is wrong or was replaced. Check the email it came in. |
-| "usage limit was reached (429)" | Wait and try again later. |
+| "not allowed to read this data (403)" | Email support with the address your key was issued to. |
+| "usage limit was reached (429)" | Wait and try again later, or email support to have the limit raised. |
+| "A key has already been issued to that email address" | Use the key from that email, or email support to have it reissued. |
 | "Files to download: 0" | Your data folder is already up to date. |
+
+## Support
+
+Email [support@wallstreetsahead.ai](mailto:support@wallstreetsahead.ai) for key problems, usage limits or anything else. Send it from the address your key was issued to, and never include the key itself. For bugs in the plugin, you can also [open an issue on GitHub](https://github.com/andrewkiltylough/MCPServerPUBLIC/issues).
 
 ## License
 
