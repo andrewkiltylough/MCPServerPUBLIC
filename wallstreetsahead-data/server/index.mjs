@@ -25,7 +25,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 const SERVER_NAME = 'wallstreetsahead-data';
-const SERVER_VERSION = '0.3.4';
+const SERVER_VERSION = '0.3.5';
 const INSTRUCTIONS =
   'Fetches the ETF mover reports from Azure Files into the local data folder. ' +
   'Call check_new_data to see what is missing, then fetch_data to download it.';
